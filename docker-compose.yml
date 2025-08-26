@@ -1,0 +1,80 @@
+# Docker Compose configuration for Laneful PHP SDK
+
+services:
+  # Main PHP development environment
+  laneful-php:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: laneful-php-dev
+    volumes:
+      - .:/app:cached
+      - vendor-cache:/app/vendor
+    environment:
+      - LANEFUL_BASE_URL=${LANEFUL_BASE_URL:-https://api.laneful.net}
+      - LANEFUL_AUTH_TOKEN=${LANEFUL_AUTH_TOKEN:-your-token-here}
+      - XDEBUG_MODE=${XDEBUG_MODE:-debug}
+    working_dir: /app
+    tty: true
+    stdin_open: true
+    networks:
+      - laneful-network
+
+  # Production-like environment
+  laneful-php-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: laneful-php-prod
+    environment:
+      - LANEFUL_BASE_URL=${LANEFUL_BASE_URL:-https://api.laneful.net}
+      - LANEFUL_AUTH_TOKEN=${LANEFUL_AUTH_TOKEN:-your-token-here}
+    volumes:
+      - .:/app:ro
+    networks:
+      - laneful-network
+    profiles:
+      - production
+
+  # Web server for examples (optional)
+  nginx:
+    image: nginx:alpine
+    container_name: laneful-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - .:/var/www/html:ro
+    depends_on:
+      - php-fpm
+    networks:
+      - laneful-network
+    profiles:
+      - web
+
+  # PHP-FPM for web examples
+  php-fpm:
+    build:
+      context: .
+      dockerfile: Dockerfile.fpm
+    container_name: laneful-php-fpm
+    volumes:
+      - .:/var/www/html:cached
+      - fpm-vendor:/var/www/html/vendor
+    environment:
+      - LANEFUL_BASE_URL=${LANEFUL_BASE_URL:-https://api.laneful.net}
+      - LANEFUL_AUTH_TOKEN=${LANEFUL_AUTH_TOKEN:-your-token-here}
+    networks:
+      - laneful-network
+    profiles:
+      - web
+
+volumes:
+  vendor-cache:
+    driver: local
+  fpm-vendor:
+    driver: local
+
+networks:
+  laneful-network:
+    driver: bridge
