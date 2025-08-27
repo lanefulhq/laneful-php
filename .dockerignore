@@ -1,0 +1,61 @@
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependencies
+/vendor/
+/node_modules/
+
+# Logs
+*.log
+/logs/
+
+# Testing
+/tests/
+phpunit.xml
+.phpunit.result.cache
+
+# Development tools
+.phpstan.neon
+phpcs.xml
+.php-cs-fixer.php
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Cache
+/cache/
+/tmp/
+
+# Documentation
+/docs/
+README.md
+CHANGELOG.md
+CONTRIBUTING.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# Build artifacts
+/build/
+/dist/
