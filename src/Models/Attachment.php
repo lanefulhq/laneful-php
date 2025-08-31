@@ -15,6 +15,7 @@ final class Attachment implements JsonSerializable
         public readonly string $contentType,
         public readonly ?string $fileName = null,
         public readonly ?string $content = null,
+        /** @deprecated Reserved for future inline attachment support. Not currently used by the API. */
         public readonly ?string $inlineId = null
     ) {
         if (empty($this->contentType)) {

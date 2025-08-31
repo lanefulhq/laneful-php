@@ -195,6 +195,12 @@ final class Email implements JsonSerializable
             throw new \InvalidArgumentException('Email must have at least one recipient (to, cc, or bcc)');
         }
 
+        // Validate maximum recipients limit (1000 total across to/cc/bcc as per documentation)
+        $totalRecipients = count($this->to) + count($this->cc) + count($this->bcc);
+        if ($totalRecipients > 1000) {
+            throw new \InvalidArgumentException('Maximum 1000 recipients total across to/cc/bcc fields');
+        }
+
         // Validate address arrays contain only Address objects
         foreach ($this->to as $address) {
             if (!$address instanceof Address) {
@@ -225,9 +231,37 @@ final class Email implements JsonSerializable
             throw new \InvalidArgumentException('Email must have either content (text/HTML) or a template ID');
         }
 
-        // Validate send time
-        if ($this->sendTime !== null && $this->sendTime <= time()) {
-            throw new \InvalidArgumentException('Send time must be in the future');
+        // Validate send time (max 72 hours in the future as per documentation)
+        if ($this->sendTime !== null) {
+            if ($this->sendTime <= time()) {
+                throw new \InvalidArgumentException('Send time must be in the future');
+            }
+
+            $maxFutureTime = time() + (72 * 60 * 60); // 72 hours
+            if ($this->sendTime > $maxFutureTime) {
+                throw new \InvalidArgumentException('Send time cannot be more than 72 hours in the future');
+            }
+        }
+
+        // Validate webhook_data limits (max 10 keys, 50 char keys, 100 char values)
+        if ($this->webhookData !== null) {
+            if (count($this->webhookData) > 10) {
+                throw new \InvalidArgumentException('Webhook data cannot have more than 10 keys');
+            }
+
+            foreach ($this->webhookData as $key => $value) {
+                if (strlen($key) > 50) {
+                    throw new \InvalidArgumentException('Webhook data keys cannot exceed 50 characters');
+                }
+                if (strlen((string)$value) > 100) {
+                    throw new \InvalidArgumentException('Webhook data values cannot exceed 100 characters');
+                }
+            }
+        }
+
+        // Validate tag length (max 100 characters)
+        if ($this->tag !== null && strlen($this->tag) > 100) {
+            throw new \InvalidArgumentException('Tag cannot exceed 100 characters');
         }
     }
 }

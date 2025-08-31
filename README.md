@@ -20,6 +20,7 @@ require_once 'vendor/autoload.php';
 use Laneful\LanefulClient;
 use Laneful\Models\Email;
 use Laneful\Models\Address;
+use Laneful\Models\TrackingSettings;
 
 $client = new LanefulClient(
     baseUrl: 'https://your-endpoint.send.laneful.net',
@@ -31,7 +32,8 @@ $email = new Email(
     to: [new Address('recipient@example.com', 'Recipient Name')],
     subject: 'Hello from Laneful',
     textContent: 'This is a test email.',
-    htmlContent: '<h1>This is a test email.</h1>'
+    htmlContent: '<h1>This is a test email.</h1>',
+    tracking: new TrackingSettings(opens: true, clicks: true)
 );
 
 try {
@@ -61,11 +63,13 @@ try {
 $email = new Email(
     from: new Address('sender@example.com'),
     to: [new Address('user@example.com')],
+    subject: 'Welcome to Our Service',
     templateId: 'welcome-template',
     templateData: [
         'name' => 'John Doe',
         'company' => 'Acme Corp',
-    ]
+    ],
+    tracking: new TrackingSettings(opens: true, clicks: true)
 );
 
 $response = $client->sendEmail($email);
@@ -83,7 +87,8 @@ $email = new Email(
     textContent: 'Please find the document attached.',
     attachments: [
         Attachment::fromFile('/path/to/document.pdf'),
-    ]
+    ],
+    tracking: new TrackingSettings(opens: true, clicks: true)
 );
 
 $response = $client->sendEmail($email);
@@ -126,13 +131,43 @@ make web
 ```php
 use Laneful\Webhooks\WebhookVerifier;
 
+// Get the raw payload
 $payload = file_get_contents('php://input');
-$signature = $_SERVER['HTTP_X_LANEFUL_SIGNATURE'] ?? '';
+
+// Extract signature from headers (handles multiple formats)
+$signature = WebhookVerifier::extractSignatureFromHeaders($_SERVER);
 $secret = 'your-webhook-secret';
 
-if (WebhookVerifier::verifySignature($secret, $payload, $signature)) {
-    $data = json_decode($payload, true);
-    // Process webhook
+if ($signature && WebhookVerifier::verifySignature($secret, $payload, $signature)) {
+    // Parse and validate webhook payload
+    try {
+        $webhookData = WebhookVerifier::parseWebhookPayload($payload);
+        
+        // Process events (supports both batch and single event formats)
+        foreach ($webhookData['events'] as $event) {
+            switch ($event['event']) {
+                case 'delivery':
+                    // Handle email delivered
+                    break;
+                case 'open':
+                    // Handle email opened
+                    break;
+                case 'click':
+                    // Handle link clicked
+                    break;
+                case 'bounce':
+                    // Handle email bounced
+                    break;
+                // Add other event types as needed
+            }
+        }
+        
+        http_response_code(200);
+        echo "OK";
+    } catch (\InvalidArgumentException $e) {
+        http_response_code(400);
+        echo "Invalid webhook payload: " . $e->getMessage();
+    }
 } else {
     http_response_code(401);
     echo "Invalid webhook signature\n";
@@ -184,6 +219,7 @@ $email = new Email(
     to: [new Address('user@example.com')],
     subject: 'Scheduled Email',
     textContent: 'This email was scheduled.',
-    sendTime: time() + (24 * 60 * 60) // 24 hours from now
+    sendTime: time() + (24 * 60 * 60), // 24 hours from now
+    tracking: new TrackingSettings(opens: true, clicks: true)
 );
 ```
