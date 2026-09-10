@@ -24,8 +24,8 @@ final class WebhookVerifier
         }
 
         // Handle sha256= prefix as documented in Webhooks.tsx
-        $cleanSignature = str_starts_with($signature, 'sha256=') 
-            ? substr($signature, 7) 
+        $cleanSignature = str_starts_with($signature, 'sha256=')
+            ? substr($signature, 7)
             : $signature;
 
         $expectedSignature = hash_hmac('sha256', $payload, $secret);
@@ -51,13 +51,13 @@ final class WebhookVerifier
      * Validate webhook payload structure and extract events.
      *
      * @param string $payload The raw webhook payload JSON
-     * @return array{isBatch: bool, events: array} Parsed webhook data
+     * @return array{isBatch: bool, events: list<array<string, mixed>>} Parsed webhook data
      * @throws \InvalidArgumentException If payload is invalid JSON or structure
      */
     public static function parseWebhookPayload(string $payload): array
     {
         $data = json_decode($payload, true);
-        
+
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new \InvalidArgumentException('Invalid JSON payload: ' . json_last_error_msg());
         }
@@ -81,13 +81,13 @@ final class WebhookVerifier
     /**
      * Validate individual event structure according to documentation.
      *
-     * @param array $event The event data
+     * @param array<string, mixed> $event The event data
      * @throws \InvalidArgumentException If event structure is invalid
      */
     private static function validateEventStructure(array $event): void
     {
         $requiredFields = ['event', 'email', 'lane_id', 'message_id', 'timestamp'];
-        
+
         foreach ($requiredFields as $field) {
             if (!isset($event[$field])) {
                 throw new \InvalidArgumentException("Missing required field: {$field}");
@@ -96,10 +96,10 @@ final class WebhookVerifier
 
         // Validate event types according to documentation
         $validEventTypes = [
-            'delivery', 'open', 'click', 'drop', 'spam_complaint', 
+            'request', 'delivery', 'open', 'click', 'drop', 'spam_complaint',
             'unsubscribe', 'bounce'
         ];
-        
+
         if (!in_array($event['event'], $validEventTypes, true)) {
             throw new \InvalidArgumentException("Invalid event type: {$event['event']}");
         }
@@ -133,7 +133,7 @@ final class WebhookVerifier
     /**
      * Extract webhook signature from HTTP headers (supports both formats).
      *
-     * @param array $headers HTTP headers array
+     * @param array<string, mixed> $headers HTTP headers array
      * @return string|null The webhook signature or null if not found
      */
     public static function extractSignatureFromHeaders(array $headers): ?string

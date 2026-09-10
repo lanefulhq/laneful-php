@@ -96,6 +96,10 @@ function processWebhookEvent(array $event): void
     
     // Process based on event type (all types from documentation)
     switch ($eventType) {
+        case 'request':
+            error_log("Send request accepted for {$event['email']} (Message ID: {$messageId})");
+            break;
+
         case 'delivery':
             handleDeliveryEvent($event);
             break;

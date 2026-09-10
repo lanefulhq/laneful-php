@@ -15,7 +15,8 @@ final class TrackingSettings implements JsonSerializable
         public readonly ?bool $opens = null,
         public readonly ?bool $clicks = null,
         public readonly ?bool $unsubscribes = null,
-        public readonly ?int $unsubscribeGroupId = null
+        public readonly ?int $unsubscribeGroupId = null,
+        public readonly ?string $unsubscribeGroupName = null
     ) {
     }
 
@@ -30,14 +31,15 @@ final class TrackingSettings implements JsonSerializable
             opens: $data['opens'] ?? null,
             clicks: $data['clicks'] ?? null,
             unsubscribes: $data['unsubscribes'] ?? null,
-            unsubscribeGroupId: $data['unsubscribe_group_id'] ?? null
+            unsubscribeGroupId: $data['unsubscribe_group_id'] ?? null,
+            unsubscribeGroupName: $data['unsubscribe_group_name'] ?? null
         );
     }
 
     /**
      * Convert to array representation.
      *
-     * @return array<string, bool|int>
+     * @return array<string, bool|int|string>
      */
     public function toArray(): array
     {
@@ -59,11 +61,15 @@ final class TrackingSettings implements JsonSerializable
             $data['unsubscribe_group_id'] = $this->unsubscribeGroupId;
         }
 
+        if ($this->unsubscribeGroupName !== null) {
+            $data['unsubscribe_group_name'] = $this->unsubscribeGroupName;
+        }
+
         return $data;
     }
 
     /**
-     * @return array<string, bool|int>
+     * @return array<string, bool|int|string>
      */
     public function jsonSerialize(): array
     {

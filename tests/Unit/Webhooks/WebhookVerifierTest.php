@@ -173,7 +173,8 @@ class WebhookVerifierTest extends TestCase
             ['drop'],
             ['spam_complaint'],
             ['unsubscribe'],
-            ['bounce']
+            ['bounce'],
+            ['request']
         ];
     }
 
