@@ -20,6 +20,7 @@ class TrackingSettingsTest extends TestCase
         $this->assertFalse($tracking->clicks);
         $this->assertTrue($tracking->unsubscribes);
         $this->assertSame(123, $tracking->unsubscribeGroupId);
+        $this->assertNull($tracking->unsubscribeGroupName);
     }
 
     public function testCanCreateWithDefaults(): void
@@ -47,6 +48,25 @@ class TrackingSettingsTest extends TestCase
         $this->assertFalse($tracking->clicks);
         $this->assertTrue($tracking->unsubscribes);
         $this->assertSame(456, $tracking->unsubscribeGroupId);
+        $this->assertNull($tracking->unsubscribeGroupName);
+    }
+
+    public function testUnsubscribeGroupName(): void
+    {
+        $tracking = new TrackingSettings(
+            unsubscribeGroupName: 'Newsletters'
+        );
+
+        $this->assertSame('Newsletters', $tracking->unsubscribeGroupName);
+        $this->assertSame(
+            ['unsubscribe_group_name' => 'Newsletters'],
+            $tracking->toArray()
+        );
+
+        $fromArray = TrackingSettings::fromArray([
+            'unsubscribe_group_name' => 'Promotions',
+        ]);
+        $this->assertSame('Promotions', $fromArray->unsubscribeGroupName);
     }
 
     public function testToArray(): void

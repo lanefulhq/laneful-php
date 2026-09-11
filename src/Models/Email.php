@@ -28,6 +28,7 @@ final class Email implements JsonSerializable
      * @param array<string, string>|null $webhookData
      * @param string|null $tag
      * @param TrackingSettings|null $tracking
+     * @param Address|null $fromHeader Visible From address in the message From header
      */
     public function __construct(
         public Address $from,
@@ -45,7 +46,8 @@ final class Email implements JsonSerializable
         public ?int $sendTime = null,
         public ?array $webhookData = null,
         public ?string $tag = null,
-        public ?TrackingSettings $tracking = null
+        public ?TrackingSettings $tracking = null,
+        public ?Address $fromHeader = null
     ) {
         $this->validateEmailAddresses();
         $this->validateContent();
@@ -82,6 +84,7 @@ final class Email implements JsonSerializable
 
         $replyTo = isset($data['reply_to']) ? Address::fromArray($data['reply_to']) : null;
         $tracking = isset($data['tracking']) ? TrackingSettings::fromArray($data['tracking']) : null;
+        $fromHeader = isset($data['from_header']) ? Address::fromArray($data['from_header']) : null;
 
         return new self(
             from: $from,
@@ -99,7 +102,8 @@ final class Email implements JsonSerializable
             sendTime: $data['send_time'] ?? null,
             webhookData: $data['webhook_data'] ?? null,
             tag: $data['tag'] ?? null,
-            tracking: $tracking
+            tracking: $tracking,
+            fromHeader: $fromHeader
         );
     }
 
@@ -177,6 +181,10 @@ final class Email implements JsonSerializable
             $data['tracking'] = $this->tracking->toArray();
         }
 
+        if ($this->fromHeader !== null) {
+            $data['from_header'] = $this->fromHeader->toArray();
+        }
+
         return $data;
     }
 
@@ -243,10 +251,10 @@ final class Email implements JsonSerializable
             }
         }
 
-        // Validate webhook_data limits (max 10 keys, 50 char keys, 100 char values)
+        // Validate webhook_data limits (max 20 keys, 50 char keys, 100 char values)
         if ($this->webhookData !== null) {
-            if (count($this->webhookData) > 10) {
-                throw new \InvalidArgumentException('Webhook data cannot have more than 10 keys');
+            if (count($this->webhookData) > 20) {
+                throw new \InvalidArgumentException('Webhook data cannot have more than 20 keys');
             }
 
             foreach ($this->webhookData as $key => $value) {

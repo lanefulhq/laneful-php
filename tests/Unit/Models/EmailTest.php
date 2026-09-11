@@ -84,6 +84,7 @@ class EmailTest extends TestCase
         $this->assertSame($webhookData, $email->webhookData);
         $this->assertSame('newsletter', $email->tag);
         $this->assertSame($tracking, $email->tracking);
+        $this->assertNull($email->fromHeader);
     }
 
     public function testThrowsExceptionWithNoRecipients(): void
@@ -249,6 +250,7 @@ class EmailTest extends TestCase
         $this->assertSame('newsletter', $email->tag);
         $this->assertTrue($email->tracking->opens);
         $this->assertFalse($email->tracking->clicks);
+        $this->assertNull($email->fromHeader);
     }
 
     public function testToArray(): void
@@ -292,6 +294,53 @@ class EmailTest extends TestCase
         ];
         
         $this->assertEquals($expected, $array);
+    }
+
+    public function testFromHeaderSerializesAsFromHeader(): void
+    {
+        $fromHeader = new Address('display@example.com', 'Display Name');
+        $email = new Email(
+            from: new Address('sender@example.com'),
+            to: [new Address('to@example.com')],
+            subject: 'Test',
+            textContent: 'Content',
+            fromHeader: $fromHeader
+        );
+
+        $this->assertSame($fromHeader, $email->fromHeader);
+        $this->assertSame(
+            ['email' => 'display@example.com', 'name' => 'Display Name'],
+            $email->toArray()['from_header']
+        );
+
+        $fromArray = Email::fromArray([
+            'from' => ['email' => 'sender@example.com'],
+            'from_header' => ['email' => 'display@example.com', 'name' => 'Display Name'],
+            'to' => [['email' => 'to@example.com']],
+            'subject' => 'Test',
+            'text_content' => 'Content',
+        ]);
+
+        $this->assertSame('display@example.com', $fromArray->fromHeader->email);
+        $this->assertSame('Display Name', $fromArray->fromHeader->name);
+    }
+
+    public function testAcceptsTwentyWebhookDataKeys(): void
+    {
+        $webhookData = [];
+        for ($i = 0; $i < 20; $i++) {
+            $webhookData["key{$i}"] = "value{$i}";
+        }
+
+        $email = new Email(
+            from: new Address('sender@example.com'),
+            to: [new Address('recipient@example.com')],
+            subject: 'Test',
+            textContent: 'Content',
+            webhookData: $webhookData
+        );
+
+        $this->assertCount(20, $email->webhookData);
     }
 
     public function testToArrayWithMinimalData(): void
@@ -365,10 +414,10 @@ class EmailTest extends TestCase
     public function testThrowsExceptionWhenWebhookDataHasTooManyKeys(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Webhook data cannot have more than 10 keys');
+        $this->expectExceptionMessage('Webhook data cannot have more than 20 keys');
         
         $webhookData = [];
-        for ($i = 0; $i < 11; $i++) {
+        for ($i = 0; $i < 21; $i++) {
             $webhookData["key{$i}"] = "value{$i}";
         }
         
