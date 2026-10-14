@@ -10,8 +10,8 @@ use Laneful\Models\ListGooglePostmasterSpamReportsParams;
 use Laneful\Models\ListSndsReportsParams;
 
 $client = new LanefulClient(
-    baseUrl: $_ENV['LANEFUL_BASE_URL'] ?? 'https://api.laneful.net',
-    authToken: $_ENV['LANEFUL_AUTH_TOKEN'] ?? 'your-auth-token-here'
+    baseUrl: getenv('LANEFUL_BASE_URL') ?: 'https://api.laneful.net',
+    authToken: getenv('LANEFUL_AUTH_TOKEN') ?: 'your-auth-token-here'
 );
 
 try {

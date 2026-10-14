@@ -379,7 +379,7 @@ class LanefulClientTest extends TestCase
                         ],
                         $options['json']['mail_settings']
                     );
-                    $this->assertSame('laneful-php/1.1.0', $options['headers']['User-Agent']);
+                    $this->assertSame('laneful-php/1.2.0', $options['headers']['User-Agent']);
 
                     return true;
                 })
@@ -393,6 +393,34 @@ class LanefulClientTest extends TestCase
 
         $this->assertSame('accepted', $result['status']);
         $this->assertSame(['msg-1'], $result['message_ids']);
+    }
+
+    public function testSendEmailWithIdempotencyKey(): void
+    {
+        $email = new Email(
+            from: new Address('sender@example.com'),
+            to: [new Address('recipient@example.com')],
+            subject: 'Test',
+            textContent: 'Content'
+        );
+
+        $this->httpClient
+            ->expects($this->once())
+            ->method('request')
+            ->with(
+                'POST',
+                'https://api.example.com/v1/email/send',
+                $this->callback(function ($options) {
+                    $this->assertSame(['idempotency_key' => 'order-1234'], $options['json']['mail_settings']);
+
+                    return true;
+                })
+            )
+            ->willReturn(new Response(200, [], '{"status":"accepted"}'));
+
+        $result = $this->client->sendEmail($email, new MailSettings(idempotencyKey: 'order-1234'));
+
+        $this->assertSame('accepted', $result['status']);
     }
 
     public function testListUnsubscribeGroups(): void

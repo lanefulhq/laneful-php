@@ -199,20 +199,55 @@ class WebhookVerifierTest extends TestCase
         WebhookVerifier::parseWebhookPayload($payload);
     }
 
-    public function testParsePayloadInvalidEventType(): void
+    public function testParsePayloadKeepsUnknownEventType(): void
     {
         $payload = json_encode([
-            'event' => 'invalid_event_type',
+            'event' => 'future_event_type',
             'email' => 'user@example.com',
             'lane_id' => '5805dd85-ed8c-44db-91a7-1d53a41c86a5',
             'message_id' => 'H-1-019844e340027d728a7cfda632e14d0a',
             'timestamp' => 1753502407
         ]);
-        
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Invalid event type: invalid_event_type');
-        
-        WebhookVerifier::parseWebhookPayload($payload);
+
+        $result = WebhookVerifier::parseWebhookPayload($payload);
+
+        $this->assertSame('future_event_type', $result['events'][0]['event']);
+    }
+
+    public function testParseBatchWithUnknownEventTypeKeepsEveryEvent(): void
+    {
+        $payload = json_encode([
+            ['event' => 'delivery', 'email' => 'user@example.com', 'lane_id' => '', 'message_id' => 'H-1-a', 'timestamp' => 1753502407],
+            ['event' => 'future_event_type', 'email' => 'user@example.com', 'lane_id' => '', 'message_id' => 'H-1-b', 'timestamp' => 1753502408],
+        ]);
+
+        $result = WebhookVerifier::parseWebhookPayload($payload);
+
+        $this->assertTrue($result['isBatch']);
+        $this->assertSame(['delivery', 'future_event_type'], array_column($result['events'], 'event'));
+    }
+
+    public function testParseRealRequestEventWithEmptyLaneIdKeepsEveryField(): void
+    {
+        // Shape of a real request event: empty lane_id, id and mx_host at the top level.
+        $payload = json_encode([
+            'id' => '01a136a7f4f77430913f16d9d3e195a8',
+            'event' => 'request',
+            'email' => 'user@example.com',
+            'message_id' => 'H-0-01a136a7f4ef7bc2ac33bc34d2377fab-21183',
+            'lane_id' => '',
+            'tag' => '',
+            'timestamp' => 1791918339,
+            'mx_host' => 'aspmx.l.google.com',
+            'metadata' => ['run_id' => 'r1'],
+        ]);
+
+        $event = WebhookVerifier::parseWebhookPayload($payload)['events'][0];
+
+        $this->assertSame('01a136a7f4f77430913f16d9d3e195a8', $event['id']);
+        $this->assertSame('', $event['lane_id']);
+        $this->assertSame('aspmx.l.google.com', $event['mx_host']);
+        $this->assertSame(['run_id' => 'r1'], $event['metadata']);
     }
 
     public function testParsePayloadInvalidEmail(): void
@@ -231,7 +266,7 @@ class WebhookVerifierTest extends TestCase
         WebhookVerifier::parseWebhookPayload($payload);
     }
 
-    public function testParsePayloadInvalidLaneId(): void
+    public function testParsePayloadAcceptsAnyLaneId(): void
     {
         $payload = json_encode([
             'event' => 'delivery',
@@ -240,11 +275,10 @@ class WebhookVerifierTest extends TestCase
             'message_id' => 'H-1-019844e340027d728a7cfda632e14d0a',
             'timestamp' => 1753502407
         ]);
-        
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Invalid lane_id format');
-        
-        WebhookVerifier::parseWebhookPayload($payload);
+
+        $result = WebhookVerifier::parseWebhookPayload($payload);
+
+        $this->assertSame('not-a-uuid', $result['events'][0]['lane_id']);
     }
 
     public function testParsePayloadInvalidTimestamp(): void

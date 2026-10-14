@@ -181,6 +181,10 @@ if ($signature && WebhookVerifier::verifySignature($secret, $payload, $signature
 }
 ```
 
+Each parsed event contains every field Laneful sends. Every event has `id`, `event`, `email`, `message_id`, `lane_id`, `tag`, `timestamp` and `metadata` (the `webhookData` sent with the email); `lane_id` is empty on `request` events. Event-specific fields such as `url`, `client_ip`, `is_machine`, `code`, `is_hard`, `classification`, `reason` and `mx_host` are included too. `id` is unique per event and stays the same when Laneful delivers the event again on retry or in a batch, so use it to skip events you have already processed. Events of types the SDK doesn't list are kept rather than rejecting the payload, so skip the ones you don't handle.
+
+See [`examples/webhook_example.php`](examples/webhook_example.php) for a runnable receiver: `LANEFUL_WEBHOOK_SECRET=your-webhook-secret php -S 0.0.0.0:8000 examples/webhook_example.php`.
+
 ## Error Handling
 
 ```php
@@ -231,6 +235,21 @@ $response = $client->sendEmail(
 );
 // $response['message_ids'] is present when returnMessageIds is true
 ```
+
+### Duplicate send protection
+
+Pass an idempotency key (1 to 36 bytes) and reuse it when you retry a send, for example after a timeout. The client does not retry on its own.
+
+```php
+use Laneful\Models\MailSettings;
+
+$response = $client->sendEmail(
+    $email,
+    new MailSettings(idempotencyKey: "order-{$orderId}")
+);
+```
+
+Laneful remembers a key per organization for one hour. A repeated request with the same key gets status `accepted` with no message IDs and sends nothing, even if the emails differ, so use a new key for every distinct send. Detection is best effort. A request that fails with HTTP 500 doesn't keep its key, so a retry with it is processed as a new request: before resending after a 500, check your webhook events (a `request` event means Laneful accepted the email). Sandbox mode requests are not deduplicated. A key outside 1 to 36 bytes throws `Laneful\Exceptions\ValidationException`.
 
 ### Tracking with an unsubscribe group
 
