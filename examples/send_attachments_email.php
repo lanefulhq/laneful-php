@@ -8,12 +8,12 @@ use Laneful\Models\Email;
 use Laneful\Models\Address;
 use Laneful\Models\Attachment;
 use Laneful\Models\TrackingSettings;
-use Laneful\Exceptions\*;
+use Laneful\Exceptions\{ApiException, HttpException, ValidationException};
 
 // Initialize the client
 $client = new LanefulClient(
-    baseUrl: $_ENV['LANEFUL_BASE_URL'] ?? 'https://your-endpoint.send.laneful.net',
-    authToken: $_ENV['LANEFUL_AUTH_TOKEN'] ?? 'your-auth-token-here'
+    baseUrl: getenv('LANEFUL_BASE_URL') ?: 'https://your-endpoint.send.laneful.net',
+    authToken: getenv('LANEFUL_AUTH_TOKEN') ?: 'your-auth-token-here'
 );
 
 // Create attachment from file

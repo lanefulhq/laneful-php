@@ -175,8 +175,8 @@ use Laneful\Models\TrackingSettings;
     }
 
     // Display environment variables for convenience
-    $envBaseUrl = $_ENV['LANEFUL_BASE_URL'] ?? '';
-    $envAuthToken = $_ENV['LANEFUL_AUTH_TOKEN'] ?? '';
+    $envBaseUrl = getenv('LANEFUL_BASE_URL') ?: '';
+    $envAuthToken = getenv('LANEFUL_AUTH_TOKEN') ?: '';
     ?>
 
     <?php if ($message): ?>
