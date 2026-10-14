@@ -232,6 +232,21 @@ $response = $client->sendEmail(
 // $response['message_ids'] is present when returnMessageIds is true
 ```
 
+### Duplicate send protection
+
+Pass an idempotency key (1 to 36 bytes) and reuse it when you retry a send, for example after a timeout. The client does not retry on its own.
+
+```php
+use Laneful\Models\MailSettings;
+
+$response = $client->sendEmail(
+    $email,
+    new MailSettings(idempotencyKey: "order-{$orderId}")
+);
+```
+
+Laneful remembers a key per organization for one hour. A repeated request with the same key gets status `accepted` with no message IDs and sends nothing, even if the emails differ, so use a new key for every distinct send. If a request fails, the key is released and a retry with the same key is processed normally. Sandbox mode requests are not deduplicated. A key outside 1 to 36 bytes throws `Laneful\Exceptions\ValidationException`.
+
 ### Tracking with an unsubscribe group
 
 ```php
