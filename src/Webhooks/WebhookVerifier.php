@@ -94,15 +94,7 @@ final class WebhookVerifier
             }
         }
 
-        // Validate event types according to documentation
-        $validEventTypes = [
-            'request', 'delivery', 'open', 'click', 'drop', 'spam_complaint',
-            'unsubscribe', 'bounce'
-        ];
-
-        if (!in_array($event['event'], $validEventTypes, true)) {
-            throw new \InvalidArgumentException("Invalid event type: {$event['event']}");
-        }
+        // Event types aren't checked: new event types must not make the whole payload fail.
 
         // Validate email format
         if (!filter_var($event['email'], FILTER_VALIDATE_EMAIL)) {
@@ -114,10 +106,7 @@ final class WebhookVerifier
             throw new \InvalidArgumentException("Invalid timestamp format");
         }
 
-        // Validate lane_id is a valid UUID format
-        if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $event['lane_id'])) {
-            throw new \InvalidArgumentException("Invalid lane_id format: {$event['lane_id']}");
-        }
+        // lane_id isn't checked: request events have an empty lane_id.
     }
 
     /**
