@@ -39,7 +39,7 @@ use Psr\Http\Message\ResponseInterface;
 final class LanefulClient
 {
     private const API_VERSION = 'v1';
-    private const VERSION = '1.1.0';
+    private const VERSION = '1.2.0';
     private const DEFAULT_TIMEOUT = 30;
 
     private HttpClient $httpClient;

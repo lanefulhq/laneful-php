@@ -379,7 +379,7 @@ class LanefulClientTest extends TestCase
                         ],
                         $options['json']['mail_settings']
                     );
-                    $this->assertSame('laneful-php/1.1.0', $options['headers']['User-Agent']);
+                    $this->assertSame('laneful-php/1.2.0', $options['headers']['User-Agent']);
 
                     return true;
                 })
