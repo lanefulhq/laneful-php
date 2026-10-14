@@ -4,17 +4,21 @@ declare(strict_types=1);
 
 /**
  * Laneful Webhook Handler Example
- * 
+ *
  * This example demonstrates how to properly handle Laneful webhooks
  * according to the documentation in Webhooks.tsx
+ *
+ * Run it with PHP's built-in server:
+ *   LANEFUL_WEBHOOK_SECRET=your-webhook-secret php -S 0.0.0.0:8000 examples/webhook_example.php
  */
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use Laneful\Webhooks\WebhookVerifier;
 
-// Configuration
-$webhookSecret = $_ENV['LANEFUL_WEBHOOK_SECRET'] ?? 'your-webhook-secret-here';
+// Configuration. getenv() works with any variables_order; $_ENV is empty under the
+// standard php.ini files (variables_order = "GPCS").
+$webhookSecret = getenv('LANEFUL_WEBHOOK_SECRET') ?: '';
 
 /**
  * Complete webhook verification and processing workflow
@@ -23,7 +27,14 @@ $webhookSecret = $_ENV['LANEFUL_WEBHOOK_SECRET'] ?? 'your-webhook-secret-here';
 function handleWebhook(): void
 {
     global $webhookSecret;
-    
+
+    if ($webhookSecret === '') {
+        error_log('LANEFUL_WEBHOOK_SECRET is not set');
+        http_response_code(500);
+        echo json_encode(['error' => 'Webhook secret is not configured']);
+        return;
+    }
+
     try {
         // Step 1: Get raw payload
         $payload = file_get_contents('php://input');
@@ -91,8 +102,9 @@ function processWebhookEvent(array $event): void
     $messageId = $event['message_id'];
     $timestamp = $event['timestamp'];
     
-    // Log basic event info
-    error_log("Processing {$eventType} event for {$email} (Message ID: {$messageId})");
+    // Log basic event info. id is unique per event and unchanged on retries: use it to skip duplicates.
+    $eventId = $event['id'] ?? '';
+    error_log("Processing {$eventType} event {$eventId} for {$email} (Message ID: {$messageId})");
     
     // Process based on event type (all types from documentation)
     switch ($eventType) {
@@ -151,9 +163,9 @@ function handleOpenEvent(array $event): void
 {
     // Track email opens
     $clientInfo = [
-        'device' => $event['client_device'] ?? 'Unknown',
-        'os' => $event['client_os'] ?? 'Unknown',
-        'ip' => $event['client_ip'] ?? 'Unknown'
+        'device' => ($event['client_device'] ?? '') ?: 'Unknown',
+        'os' => ($event['client_os'] ?? '') ?: 'Unknown',
+        'ip' => ($event['client_ip'] ?? '') ?: 'Unknown'
     ];
     
     error_log("Email opened by {$event['email']} on {$clientInfo['device']} ({$clientInfo['os']})");
@@ -248,7 +260,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="info">
             <h3>Webhook Configuration</h3>
             <p><strong>Header:</strong> <?= WebhookVerifier::getSignatureHeaderName() ?></p>
-            <p><strong>Supported Events:</strong> delivery, open, click, bounce, drop, spam_complaint, unsubscribe</p>
+            <p><strong>Supported Events:</strong> request, delivery, open, click, bounce, drop, spam_complaint, unsubscribe</p>
             <p><strong>Payload Formats:</strong> Single event (object) or Batch mode (array)</p>
         </div>
 
