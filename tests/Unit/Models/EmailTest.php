@@ -433,7 +433,7 @@ class EmailTest extends TestCase
     public function testThrowsExceptionWhenWebhookDataKeyTooLong(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Webhook data keys cannot exceed 50 characters');
+        $this->expectExceptionMessage('Webhook data keys cannot exceed 50 bytes (UTF-8)');
         
         $longKey = str_repeat('a', 51); // 51 characters
         
@@ -449,7 +449,7 @@ class EmailTest extends TestCase
     public function testThrowsExceptionWhenWebhookDataValueTooLong(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Webhook data values cannot exceed 100 characters');
+        $this->expectExceptionMessage('Webhook data values cannot exceed 100 bytes (UTF-8)');
         
         $longValue = str_repeat('a', 101); // 101 characters
         
@@ -465,7 +465,7 @@ class EmailTest extends TestCase
     public function testThrowsExceptionWhenTagTooLong(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Tag cannot exceed 100 characters');
+        $this->expectExceptionMessage('Tag cannot exceed 100 bytes (UTF-8)');
         
         $longTag = str_repeat('a', 101); // 101 characters
         
@@ -499,5 +499,28 @@ class EmailTest extends TestCase
         );
         
         $this->assertInstanceOf(Email::class, $email);
+    }
+
+    public function testCountsWebhookDataLengthsInUtf8Bytes(): void
+    {
+        // "é" is 2 bytes in UTF-8: 25 fill a 50-byte key and 50 fill a 100-byte value.
+        $email = new Email(
+            from: new Address('sender@example.com'),
+            to: [new Address('recipient@example.com')],
+            subject: 'Test',
+            textContent: 'Content',
+            webhookData: [str_repeat('é', 25) => str_repeat('é', 50)]
+        );
+        $this->assertInstanceOf(Email::class, $email);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Webhook data values cannot exceed 100 bytes (UTF-8)');
+        new Email(
+            from: new Address('sender@example.com'),
+            to: [new Address('recipient@example.com')],
+            subject: 'Test',
+            textContent: 'Content',
+            webhookData: ['key' => str_repeat('é', 51)]
+        );
     }
 }
