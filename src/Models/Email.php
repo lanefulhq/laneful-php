@@ -251,7 +251,8 @@ final class Email implements JsonSerializable
             }
         }
 
-        // Validate webhook_data limits (max 20 keys, 50 char keys, 100 char values)
+        // Validate webhook_data limits (max 20 keys, 50-byte keys, 100-byte values).
+        // strlen() counts bytes, as the send API does, so "é" counts as 2.
         if ($this->webhookData !== null) {
             if (count($this->webhookData) > 20) {
                 throw new \InvalidArgumentException('Webhook data cannot have more than 20 keys');
@@ -259,17 +260,17 @@ final class Email implements JsonSerializable
 
             foreach ($this->webhookData as $key => $value) {
                 if (strlen($key) > 50) {
-                    throw new \InvalidArgumentException('Webhook data keys cannot exceed 50 characters');
+                    throw new \InvalidArgumentException('Webhook data keys cannot exceed 50 bytes (UTF-8)');
                 }
                 if (strlen((string)$value) > 100) {
-                    throw new \InvalidArgumentException('Webhook data values cannot exceed 100 characters');
+                    throw new \InvalidArgumentException('Webhook data values cannot exceed 100 bytes (UTF-8)');
                 }
             }
         }
 
-        // Validate tag length (max 100 characters)
+        // Validate tag length (max 100 bytes)
         if ($this->tag !== null && strlen($this->tag) > 100) {
-            throw new \InvalidArgumentException('Tag cannot exceed 100 characters');
+            throw new \InvalidArgumentException('Tag cannot exceed 100 bytes (UTF-8)');
         }
     }
 }
